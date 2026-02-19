@@ -1,0 +1,1259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DLPS Network Database</title>
+  <style>
+:root {
+  --bg: #06060d;
+  --panel: #0d1020;
+  --panel-alt: #131833;
+  --text: #d9fff8;
+  --muted: #8ec7c0;
+  --neon-cyan: #00f6ff;
+  --neon-magenta: #ff2bd6;
+  --neon-lime: #80ff72;
+  --danger: #ff5a8f;
+  --line: rgba(0, 246, 255, 0.35);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: "Trebuchet MS", "Segoe UI", Tahoma, sans-serif;
+  background: radial-gradient(circle at 20% 20%, #121730, transparent 35%),
+              radial-gradient(circle at 80% 10%, #2d0d2f, transparent 30%),
+              linear-gradient(180deg, #05050a 0%, #04040a 100%);
+  color: var(--text);
+  min-height: 100vh;
+  padding: 20px;
+}
+
+.page-grid {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(0, 246, 255, 0.07) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 246, 255, 0.07) 1px, transparent 1px);
+  background-size: 28px 28px;
+  mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.8), transparent 85%);
+}
+
+h1, h2, h3 {
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+}
+
+.app-header,
+.controls,
+.results,
+.stat-card {
+  margin: 0 auto 16px auto;
+  max-width: 1300px;
+}
+
+.neon-panel {
+  background: linear-gradient(180deg, var(--panel) 0%, var(--panel-alt) 100%);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  box-shadow:
+    0 0 12px rgba(0, 246, 255, 0.35),
+    inset 0 0 18px rgba(255, 43, 214, 0.08);
+  padding: 16px;
+}
+
+.app-header h1 {
+  color: var(--neon-cyan);
+  text-shadow: 0 0 10px rgba(0, 246, 255, 0.8), 0 0 22px rgba(0, 246, 255, 0.4);
+}
+
+.app-header p {
+  color: var(--muted);
+  margin: 8px 0 0 0;
+}
+
+/* small credit + follow button */
+.app-header .made-for {
+  margin-left: 12px;
+  font-size: 12px;
+  color: var(--muted);
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+}
+.app-header .made-for a { color: var(--neon-cyan); text-decoration: none; font-weight: 700; }
+.app-header .follow-btn {
+  padding: 4px 8px;
+  font-size: 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,0.06);
+  background: linear-gradient(90deg,#1b9bf0,#2b90d8);
+  color: #fff;
+  cursor: pointer;
+}
+.app-header .follow-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(43,144,216,0.25); }
+
+.address-label {
+  flex: 0 0 auto;
+  min-width: 68px;
+  font-size: 12px;
+  color: var(--neon-cyan);
+  text-transform: uppercase;
+  letter-spacing: 0.7px;
+}
+
+.address-code {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  padding: 6px 8px;
+  border: 1px solid rgba(0, 246, 255, 0.3);
+  border-radius: 8px;
+  background: #070b18;
+  color: var(--neon-lime);
+  font-family: Consolas, "Courier New", monospace;
+  font-size: 11px;
+  line-height: 1.3;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.donation-card {
+  margin: 0 auto 14px auto;
+  max-width: 820px;
+  padding: 10px 12px;
+}
+
+.address-line {
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.address-line:first-child {
+  margin-top: 0;
+}
+
+.address-line .btc-note {
+  margin: 0;
+  flex: 1;
+}
+
+.copy-btn {
+  flex: 0 0 auto;
+  width: auto;
+  padding: 4px 8px;
+  font-size: 11px;
+  letter-spacing: 0.6px;
+}
+
+.control-row {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.filter-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(160px, 1fr));
+  gap: 12px;
+  align-items: end;
+}
+
+label {
+  font-size: 12px;
+  color: var(--neon-cyan);
+  letter-spacing: 0.7px;
+  text-transform: uppercase;
+}
+
+input,
+select,
+button {
+  width: 100%;
+  border-radius: 8px;
+  border: 1px solid rgba(0, 246, 255, 0.4);
+  background: #090e1f;
+  color: var(--text);
+  padding: 10px 12px;
+  font-size: 14px;
+  outline: none;
+}
+
+input:focus,
+select:focus,
+button:focus {
+  border-color: var(--neon-magenta);
+  box-shadow: 0 0 8px rgba(255, 43, 214, 0.6);
+}
+
+button {
+  background: linear-gradient(90deg, #11173d, #2c1642);
+  color: #fff;
+  cursor: pointer;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+}
+
+button:hover {
+  box-shadow: 0 0 14px rgba(255, 43, 214, 0.7);
+}
+
+.hint {
+  margin: 10px 0 0 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.stats-grid {
+  margin: 0 auto 16px auto;
+  max-width: 1300px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(180px, 1fr));
+  gap: 12px;
+}
+
+.stat-card h3 {
+  font-size: 12px;
+  color: var(--neon-magenta);
+}
+
+.stat-value {
+  margin-top: 8px;
+  font-size: 32px;
+  color: var(--neon-lime);
+  text-shadow: 0 0 12px rgba(128, 255, 114, 0.7);
+  font-weight: 800;
+}
+
+.results-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.results-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.result-meta {
+  color: var(--muted);
+}
+
+.table-wrap {
+  overflow: auto;
+  border: 1px solid rgba(0, 246, 255, 0.25);
+  border-radius: 10px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 980px;
+}
+
+thead th {
+  background: rgba(0, 246, 255, 0.15);
+  color: var(--neon-cyan);
+  text-align: left;
+  padding: 10px;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+}
+
+tbody td {
+  border-top: 1px solid rgba(0, 246, 255, 0.15);
+  padding: 10px;
+  font-size: 13px;
+  vertical-align: top;
+}
+
+tbody tr:hover {
+  background: rgba(255, 43, 214, 0.07);
+}
+
+.badge {
+  display: inline-block;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.7px;
+  font-weight: 700;
+}
+
+.badge.non-empty {
+  color: #03120a;
+  background: var(--neon-lime);
+}
+
+.badge.empty {
+  color: #fff;
+  background: var(--danger);
+}
+
+.url-link {
+  color: #9be9ff;
+  text-decoration: none;
+}
+
+.url-link:hover {
+  text-decoration: underline;
+}
+
+.empty-row {
+  color: var(--muted);
+  text-align: center;
+  padding: 24px;
+}
+
+.view-links-btn {
+  width: auto;
+  padding: 6px 10px;
+  font-size: 11px;
+  letter-spacing: 0.6px;
+}
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: rgba(2, 4, 12, 0.78);
+  z-index: 1000;
+  padding: 20px;
+}
+
+.modal-overlay.open {
+  display: flex;
+}
+
+.modal-panel {
+  width: min(860px, 100%);
+  max-height: 85vh;
+  overflow: hidden;
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.modal-title {
+  color: var(--neon-cyan);
+  font-size: 18px;
+  text-shadow: 0 0 8px rgba(0, 246, 255, 0.45);
+}
+
+.modal-close {
+  width: auto;
+  min-width: 72px;
+  padding: 6px 10px;
+  font-size: 11px;
+}
+
+.modal-subtitle {
+  color: var(--muted);
+  font-size: 12px;
+  margin-bottom: 10px;
+  word-break: break-all;
+}
+
+.modal-links {
+  border: 1px solid rgba(0, 246, 255, 0.25);
+  border-radius: 10px;
+  padding: 10px;
+  max-height: 56vh;
+  overflow: auto;
+  background: rgba(7, 11, 24, 0.72);
+}
+
+.modal-link-item {
+  padding: 7px 6px;
+  border-bottom: 1px solid rgba(0, 246, 255, 0.16);
+  word-break: break-all;
+}
+
+.modal-link-item:last-child {
+  border-bottom: none;
+}
+
+.modal-link-label {
+  color: var(--neon-lime);
+  font-size: 12px;
+  margin-bottom: 3px;
+}
+
+@media (max-width: 1100px) {
+  .filter-grid,
+  .stats-grid {
+    grid-template-columns: repeat(2, minmax(160px, 1fr));
+  }
+}
+
+@media (max-width: 680px) {
+  body {
+    padding: 12px;
+  }
+
+  .filter-grid,
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .stat-value {
+    font-size: 26px;
+  }
+}
+  </style>
+</head>
+<body>
+  <div class="page-grid"></div>
+
+  <header class="app-header neon-panel">
+    <h1>DLPS Network Viewer</h1>
+    <p>Quickly view, filter, and export the entire DLPS network
+      <span class="made-for">Made by  <a href="https://x.com/StonedModder" target="_blank" rel="noopener noreferrer">StonedModder</a>
+        <button id="followBtn" class="follow-btn" title="Open x.com">Follow</button>
+      </span>
+    </p>
+  </header>
+
+
+  <section class="controls neon-panel">
+    <div class="control-row">
+      <label for="bundleFile">Upload cache bundle (.zip) or a JSON file</label>
+      <input id="bundleFile" type="file" accept=".zip,.json,application/zip,application/json" />
+    </div>
+
+    <div class="control-row">
+      <label for="searchInput">Dynamic search</label>
+      <input id="searchInput" type="text" placeholder="Search title, URL, source, category..." />
+    </div>
+
+    <div class="filter-grid">
+      <div>
+        <label for="sourceFilter">Source</label>
+        <select id="sourceFilter">
+          <option value="all">All</option>
+        </select>
+      </div>
+      <div>
+        <label for="categoryFilter">Category</label>
+        <select id="categoryFilter">
+          <option value="all">All</option>
+        </select>
+      </div>
+      <div>
+        <label for="statusFilter">Link status</label>
+        <select id="statusFilter">
+          <option value="all">All</option>
+          <option value="non_empty">Non-empty pages</option>
+          <option value="empty">Empty pages</option>
+        </select>
+      </div>
+      <div>
+        <label for="linkTypeFilter">Link type</label>
+        <select id="linkTypeFilter">
+          <option value="all">All</option>
+        </select>
+      </div>
+      <div class="button-wrap">
+        <button id="clearBtn" type="button">Clear Loaded Data</button>
+      </div>
+    </div>
+
+  </section>
+
+  <section class="stats-grid">
+    <article class="stat-card neon-panel">
+      <h3>Total Games</h3>
+      <div id="statTotal" class="stat-value">0</div>
+    </article>
+    <article class="stat-card neon-panel">
+      <h3>% of Links Valid</h3>
+      <div id="statPctValid" class="stat-value">0.00%</div>
+    </article>
+  </section>
+
+  <section class="results neon-panel">
+    <div class="results-head">
+      <h2>Games</h2>
+      <div class="results-actions">
+        <button id="exportCsvBtn" type="button">Export Filtered CSV</button>
+        <div id="resultMeta" class="result-meta">0 shown</div>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Title</th>
+            <th>Source</th>
+            <th>Category</th>
+            <th>Password</th>
+            <th>Status</th>
+            <th>Download Links</th>
+            <th>URL</th>
+          </tr>
+        </thead>
+        <tbody id="resultsBody">
+          <tr>
+            <td colspan="7" class="empty-row">Load one or more JSON files to begin.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <div id="linksModal" class="modal-overlay" aria-hidden="true">
+    <div class="modal-panel neon-panel" role="dialog" aria-modal="true" aria-labelledby="linksModalTitle">
+      <div class="modal-header">
+        <h3 id="linksModalTitle" class="modal-title">Download Links</h3>
+        <button id="linksModalClose" type="button" class="modal-close">Close</button>
+      </div>
+      <div id="linksModalSubtitle" class="modal-subtitle"></div>
+      <div id="linksModalBody" class="modal-links"></div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+  <script>
+const state = {
+  games: [],
+  skippedUrls: new Set(),
+  search: "",
+  source: "all",
+  category: "all",
+  status: "all",
+  linkType: "all",
+};
+
+const els = {
+  bundleFile: document.getElementById("bundleFile"),
+  searchInput: document.getElementById("searchInput"),
+  sourceFilter: document.getElementById("sourceFilter"),
+  categoryFilter: document.getElementById("categoryFilter"),
+  statusFilter: document.getElementById("statusFilter"),
+  linkTypeFilter: document.getElementById("linkTypeFilter"),
+  clearBtn: document.getElementById("clearBtn"),
+  exportCsvBtn: document.getElementById("exportCsvBtn"),
+  copyBtcBtn: document.getElementById("copyBtcBtn"),
+  copyLnBtn: document.getElementById("copyLnBtn"),
+  btcAddress: document.getElementById("btcAddress"),
+  lnAddress: document.getElementById("lnAddress"),
+  statTotal: document.getElementById("statTotal"),
+  statPctValid: document.getElementById("statPctValid"),
+  resultMeta: document.getElementById("resultMeta"),
+  resultsBody: document.getElementById("resultsBody"),
+  linksModal: document.getElementById("linksModal"),
+  linksModalTitle: document.getElementById("linksModalTitle"),
+  linksModalSubtitle: document.getElementById("linksModalSubtitle"),
+  linksModalBody: document.getElementById("linksModalBody"),
+  linksModalClose: document.getElementById("linksModalClose"),
+};
+
+function getDisplayLinkParts(linkItem) {
+  let linkUrl = "";
+  let linkLabel = "Link";
+
+  if (typeof linkItem === "string") {
+    linkUrl = linkItem;
+    try {
+      linkLabel = new URL(linkUrl).hostname.replace(/^www\./, "") || "Link";
+    } catch (error) {
+      linkLabel = "Link";
+    }
+  } else if (linkItem && typeof linkItem === "object") {
+    linkUrl = String(linkItem.url || "").trim();
+    linkLabel = String(linkItem.label || "Link").trim() || "Link";
+  }
+
+  return { linkUrl, linkLabel };
+}
+
+function openLinksModal(gameUrl) {
+  const game = state.games.find((item) => item.url === gameUrl);
+  if (!game) return;
+
+  const safeTitle = escapeHtml(game.title || "Untitled");
+  const safeUrl = escapeHtml(game.url || "");
+  const links = Array.isArray(game.links) ? game.links : [];
+
+  els.linksModalTitle.textContent = `Download Links (${links.length})`;
+  els.linksModalSubtitle.innerHTML = `${safeTitle}<br><a class="url-link" href="${safeUrl}" target="_blank" rel="noreferrer">${safeUrl}</a>`;
+
+  if (links.length === 0) {
+    els.linksModalBody.innerHTML = '<div class="empty-row">No download links found for this game.</div>';
+  } else {
+    els.linksModalBody.innerHTML = links
+      .map((item) => {
+        const { linkUrl, linkLabel } = getDisplayLinkParts(item);
+        if (!linkUrl) return "";
+
+        return `
+          <div class="modal-link-item">
+            <div class="modal-link-label">${escapeHtml(linkLabel)}</div>
+            <a class="url-link" href="${escapeHtml(linkUrl)}" target="_blank" rel="noreferrer">${escapeHtml(linkUrl)}</a>
+          </div>
+        `;
+      })
+      .filter(Boolean)
+      .join("");
+  }
+
+  els.linksModal.classList.add("open");
+  els.linksModal.setAttribute("aria-hidden", "false");
+}
+
+function closeLinksModal() {
+  els.linksModal.classList.remove("open");
+  els.linksModal.setAttribute("aria-hidden", "true");
+}
+
+function extractAddressText(fullText, prefix) {
+  const text = String(fullText || "");
+  const marker = `${prefix}:`;
+  if (text.startsWith(marker)) {
+    return text.slice(marker.length).trim();
+  }
+  return text.trim();
+}
+
+async function copyToClipboard(text) {
+  const value = String(text || "").trim();
+  if (!value) return false;
+
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    try {
+      await navigator.clipboard.writeText(value);
+      return true;
+    } catch (error) {
+    }
+  }
+
+  try {
+    const temp = document.createElement("textarea");
+    temp.value = value;
+    temp.setAttribute("readonly", "");
+    temp.style.position = "fixed";
+    temp.style.opacity = "0";
+    document.body.appendChild(temp);
+    temp.select();
+    const ok = document.execCommand("copy");
+    temp.remove();
+    return !!ok;
+  } catch (error) {
+    return false;
+  }
+}
+
+async function copyAddress(prefix, element, button) {
+  const address = extractAddressText(element && element.textContent, prefix);
+  const copied = await copyToClipboard(address);
+  const original = button.textContent;
+  button.textContent = copied ? "Copied" : "Failed";
+  setTimeout(() => {
+    button.textContent = original;
+  }, 1200);
+}
+
+function escapeHtml(value) {
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/\"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function toArrayLinks(links) {
+  if (!Array.isArray(links)) {
+    return [];
+  }
+  return links.filter((item) => {
+    if (typeof item === "string") {
+      return item.trim().startsWith("http");
+    }
+    if (item && typeof item === "object") {
+      return String(item.url || "").trim().startsWith("http");
+    }
+    return false;
+  });
+}
+
+function normalizeLinkType(value) {
+  const raw = String(value || "").trim().toLowerCase();
+  if (!raw) return "";
+
+  const compact = raw
+    .replace(/^www\./, "")
+    .replace(/^https?:\/\//, "")
+    .split("/")[0]
+    .replace(/\.(com|net|org|co|io|me|cc|to|xyz|in|tv|pw|site|link)$/i, "")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim()
+    .replace(/\s+/g, "_");
+
+  return compact;
+}
+
+function getLinkTypeFromItem(item) {
+  if (typeof item === "string") {
+    try {
+      const hostname = new URL(item).hostname;
+      const hostType = normalizeLinkType(hostname);
+      return hostType || "unknown";
+    } catch (error) {
+      return "unknown";
+    }
+  }
+
+  if (item && typeof item === "object") {
+    const label = normalizeLinkType(item.label || "");
+    if (label && label !== "link") {
+      return label;
+    }
+
+    try {
+      const hostname = new URL(String(item.url || "")).hostname;
+      const hostType = normalizeLinkType(hostname);
+      return hostType || "unknown";
+    } catch (error) {
+      return "unknown";
+    }
+  }
+
+  return "unknown";
+}
+
+function normalizePassword(value) {
+  const text = String(value ?? "").trim();
+  if (!text) return "";
+  const lowered = text.toLowerCase();
+  if (lowered === "n/a" || lowered === "na" || lowered === "none" || lowered === "null") {
+    return "";
+  }
+  return text;
+}
+
+function extractPassword(entry) {
+  if (!entry || typeof entry !== "object") {
+    return "";
+  }
+
+  const metadataPassword = normalizePassword(entry.metadata && entry.metadata.password);
+  if (metadataPassword) {
+    return metadataPassword;
+  }
+
+  return normalizePassword(entry.password);
+}
+
+function pickBestPassword(existingPassword, newPassword) {
+  const oldValue = normalizePassword(existingPassword);
+  const nextValue = normalizePassword(newPassword);
+  if (!oldValue) return nextValue;
+  if (!nextValue) return oldValue;
+  return nextValue.length >= oldValue.length ? nextValue : oldValue;
+}
+
+async function readJsonFile(file) {
+  const text = await file.text();
+  return JSON.parse(text);
+}
+
+function isCacheFileName(fileName) {
+  return /games_cache_.*\.json$/i.test(String(fileName || ""));
+}
+
+function isSkippedFileName(fileName) {
+  return /(^|[/\\])skipped\.json$/i.test(String(fileName || ""));
+}
+
+function collectSkippedUrlsFromPayload(payload) {
+  const urls = new Set();
+
+  if (Array.isArray(payload)) {
+    for (const item of payload) {
+      if (!item || typeof item !== "object") continue;
+      const url = String(item.url || "").trim();
+      if (url) urls.add(url);
+    }
+    return urls;
+  }
+
+  if (payload && typeof payload === "object") {
+    for (const key of Object.keys(payload)) {
+      const item = payload[key];
+      if (item && typeof item === "object") {
+        const url = String(item.url || key || "").trim();
+        if (url.startsWith("http")) urls.add(url);
+      }
+    }
+  }
+
+  return urls;
+}
+
+function mergeGamesFromPayloads(cachePayloads) {
+  const mergedMap = new Map();
+
+  for (const { fileName, payload } of cachePayloads) {
+    const games = normalizeCachePayload(payload, fileName);
+    for (const game of games) {
+      const existing = mergedMap.get(game.url);
+      if (!existing) {
+        mergedMap.set(game.url, game);
+        continue;
+      }
+
+      const bestLinks = existing.links.length >= game.links.length ? existing.links : game.links;
+      const linkTypes = [...new Set([...(existing.linkTypes || []), ...(game.linkTypes || [])])];
+      const password = pickBestPassword(existing.password, game.password);
+      mergedMap.set(game.url, {
+        ...existing,
+        ...game,
+        links: bestLinks,
+        linkTypes,
+        password,
+      });
+    }
+  }
+
+  state.games = Array.from(mergedMap.values()).sort((a, b) => a.title.localeCompare(b.title));
+}
+
+async function parseZipBundle(file) {
+  if (typeof JSZip === "undefined") {
+    throw new Error("JSZip failed to load. Refresh and try again.");
+  }
+
+  const zip = await JSZip.loadAsync(file);
+  const cachePayloads = [];
+  const skippedUrls = new Set();
+
+  const entries = Object.values(zip.files).filter((entry) => !entry.dir && /\.json$/i.test(entry.name));
+  for (const entry of entries) {
+    let payload;
+    try {
+      const text = await entry.async("string");
+      payload = JSON.parse(text);
+    } catch (error) {
+      continue;
+    }
+
+    if (isCacheFileName(entry.name)) {
+      cachePayloads.push({ fileName: entry.name, payload });
+      continue;
+    }
+
+    if (isSkippedFileName(entry.name)) {
+      const urls = collectSkippedUrlsFromPayload(payload);
+      for (const url of urls) skippedUrls.add(url);
+    }
+  }
+
+  if (cachePayloads.length === 0) {
+    throw new Error("No games_cache_*.json files found in zip.");
+  }
+
+  mergeGamesFromPayloads(cachePayloads);
+  state.skippedUrls = skippedUrls;
+}
+
+function normalizeCachePayload(payload, fileName) {
+  const output = [];
+
+  if (Array.isArray(payload)) {
+    for (const entry of payload) {
+      if (!entry || typeof entry !== "object") continue;
+      const url = String(entry.url || "").trim();
+      if (!url) continue;
+
+      const links = toArrayLinks(entry.links || []);
+      const linkTypes = [...new Set(links.map(getLinkTypeFromItem).filter(Boolean))];
+      const password = extractPassword(entry);
+      output.push({
+        url,
+        title: String(entry.title || "Untitled"),
+        source: String(entry.source || detectSourceFromFile(fileName) || "unknown").toLowerCase(),
+        category: String(entry.category || detectCategoryFromFile(fileName) || "unknown").toLowerCase(),
+        links,
+        linkTypes,
+        password,
+      });
+    }
+    return output;
+  }
+
+  if (payload && typeof payload === "object") {
+    for (const [urlKey, entry] of Object.entries(payload)) {
+      if (!entry || typeof entry !== "object") continue;
+      const url = String(entry.url || urlKey || "").trim();
+      if (!url) continue;
+
+      const links = toArrayLinks(entry.links || []);
+      const linkTypes = [...new Set(links.map(getLinkTypeFromItem).filter(Boolean))];
+      const password = extractPassword(entry);
+      output.push({
+        url,
+        title: String(entry.title || "Untitled"),
+        source: String(entry.source || detectSourceFromFile(fileName) || "unknown").toLowerCase(),
+        category: String(entry.category || detectCategoryFromFile(fileName) || "unknown").toLowerCase(),
+        links,
+        linkTypes,
+        password,
+      });
+    }
+  }
+
+  return output;
+}
+
+function detectSourceFromFile(fileName) {
+  const lower = String(fileName || "").toLowerCase();
+  if (lower.includes("dlpsgame")) return "dlpsgame";
+  if (lower.includes("nswgame")) return "nswgame";
+  if (lower.includes("dlxbgame")) return "dlxbgame";
+  if (lower.includes("downloadgamepsp")) return "downloadgamepsp";
+  return "";
+}
+
+function detectCategoryFromFile(fileName) {
+  const lower = String(fileName || "").toLowerCase();
+  const chunks = lower.split("games_cache_").pop() || "";
+  const cleaned = chunks.replace(/\.json$/i, "");
+  return cleaned || "";
+}
+
+function applyStateFilters() {
+  const q = state.search.trim().toLowerCase();
+
+  return state.games.filter((item) => {
+    const isEmpty = item.links.length === 0 || state.skippedUrls.has(item.url);
+    const sourceMatch = state.source === "all" || item.source === state.source;
+    const categoryMatch = state.category === "all" || item.category === state.category;
+    const linkTypeMatch = state.linkType === "all" || (item.linkTypes || []).includes(state.linkType);
+
+    let statusMatch = true;
+    if (state.status === "empty") statusMatch = isEmpty;
+    if (state.status === "non_empty") statusMatch = !isEmpty;
+
+    if (!q) {
+      return sourceMatch && categoryMatch && linkTypeMatch && statusMatch;
+    }
+
+    const haystack = `${item.title} ${item.url} ${item.source} ${item.category} ${(item.linkTypes || []).join(" ")} ${item.password || ""}`.toLowerCase();
+    const searchMatch = haystack.includes(q);
+
+    return sourceMatch && categoryMatch && linkTypeMatch && statusMatch && searchMatch;
+  });
+}
+
+function updateFilterOptions() {
+  const sources = [...new Set(state.games.map((g) => g.source).filter(Boolean))].sort();
+  const categoryBase = state.source === "all"
+    ? state.games
+    : state.games.filter((g) => g.source === state.source);
+  const categories = [...new Set(categoryBase.map((g) => g.category).filter(Boolean))].sort();
+  const allLinkTypes = [];
+  for (const game of state.games) {
+    const types = Array.isArray(game.linkTypes) ? game.linkTypes : [];
+    for (const item of types) {
+      if (item) allLinkTypes.push(item);
+    }
+  }
+  const linkTypes = [...new Set(allLinkTypes)].sort();
+
+  const sourceOptions = ["<option value=\"all\">All</option>"];
+  for (const source of sources) {
+    const selected = source === state.source ? " selected" : "";
+    sourceOptions.push(`<option value=\"${escapeHtml(source)}\"${selected}>${escapeHtml(source)}</option>`);
+  }
+  els.sourceFilter.innerHTML = sourceOptions.join("");
+
+  const categoryOptions = ["<option value=\"all\">All</option>"];
+  for (const category of categories) {
+    const selected = category === state.category ? " selected" : "";
+    categoryOptions.push(`<option value=\"${escapeHtml(category)}\"${selected}>${escapeHtml(category)}</option>`);
+  }
+
+  if (state.category !== "all" && !categories.includes(state.category)) {
+    state.category = "all";
+  }
+
+  els.categoryFilter.innerHTML = categoryOptions.join("");
+
+  const linkTypeOptions = ["<option value=\"all\">All</option>"];
+  for (const linkType of linkTypes) {
+    const selected = linkType === state.linkType ? " selected" : "";
+    linkTypeOptions.push(`<option value=\"${escapeHtml(linkType)}\"${selected}>${escapeHtml(linkType)}</option>`);
+  }
+  els.linkTypeFilter.innerHTML = linkTypeOptions.join("");
+}
+
+function computeStats() {
+  const urlSet = new Set();
+  for (const game of state.games) {
+    urlSet.add(game.url);
+  }
+  for (const skippedUrl of state.skippedUrls) {
+    urlSet.add(skippedUrl);
+  }
+
+  const totalGames = urlSet.size;
+
+  const emptySet = new Set([...state.skippedUrls]);
+  for (const game of state.games) {
+    if (game.links.length === 0) {
+      emptySet.add(game.url);
+    }
+  }
+
+  const emptyPages = emptySet.size;
+  const nonEmpty = Math.max(totalGames - emptyPages, 0);
+  const pctValid = totalGames > 0 ? (nonEmpty / totalGames) * 100 : 0;
+  const pctInvalid = totalGames > 0 ? (emptyPages / totalGames) * 100 : 0;
+
+  return { totalGames, emptyPages, nonEmpty, pctValid, pctInvalid };
+}
+
+function renderStats() {
+  const stats = computeStats();
+  els.statTotal.textContent = stats.totalGames.toLocaleString();
+  els.statPctValid.textContent = `${stats.pctValid.toFixed(2)}%`;
+}
+
+function renderTable() {
+  const rows = applyStateFilters();
+  els.resultMeta.textContent = `${rows.length.toLocaleString()} shown / ${state.games.length.toLocaleString()} loaded`;
+
+  if (rows.length === 0) {
+    els.resultsBody.innerHTML = '<tr><td colspan="7" class="empty-row">No matching results.</td></tr>';
+    return;
+  }
+
+  els.resultsBody.innerHTML = rows
+    .map((item) => {
+      const empty = item.links.length === 0 || state.skippedUrls.has(item.url);
+      const statusClass = empty ? "empty" : "non-empty";
+      const statusText = empty ? "Empty" : "Non-empty";
+      const safeGameUrl = escapeHtml(item.url);
+      const linksHtml = item.links.length
+        ? `<button type="button" class="view-links-btn" data-game-url="${safeGameUrl}">View (${item.links.length})</button>`
+        : "—";
+
+      return `
+        <tr>
+          <td>${escapeHtml(item.title)}</td>
+          <td>${escapeHtml(item.source)}</td>
+          <td>${escapeHtml(item.category)}</td>
+          <td>${escapeHtml(item.password || "—")}</td>
+          <td><span class="badge ${statusClass}">${statusText}</span></td>
+          <td>${linksHtml}</td>
+          <td><a class="url-link" href="${escapeHtml(item.url)}" target="_blank" rel="noreferrer">${escapeHtml(item.url)}</a></td>
+        </tr>
+      `;
+    })
+    .join("");
+}
+
+function renderAll() {
+  renderStats();
+  renderTable();
+}
+
+function csvEscape(value) {
+  const text = String(value === undefined || value === null ? "" : value);
+  return `"${text.replace(/"/g, '""')}"`;
+}
+
+function buildCsvFromRows(rows) {
+  const headers = ["title", "source", "category", "password", "status", "links_count", "url"];
+  const lines = [headers.join(",")];
+
+  for (const item of rows) {
+    const empty = item.links.length === 0 || state.skippedUrls.has(item.url);
+    const fields = [
+      item.title,
+      item.source,
+      item.category,
+      item.password || "",
+      empty ? "empty" : "non_empty",
+      item.links.length,
+      item.url,
+    ].map(csvEscape);
+
+    lines.push(fields.join(","));
+  }
+
+  return lines.join("\n");
+}
+
+function exportFilteredCsv() {
+  const rows = applyStateFilters();
+  if (rows.length === 0) {
+    alert("No filtered rows to export.");
+    return;
+  }
+
+  const csv = buildCsvFromRows(rows);
+  const blob = new Blob(["\uFEFF", csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+
+  const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
+  const filename = `dlps_cache_filtered_${stamp}.csv`;
+
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+
+  URL.revokeObjectURL(url);
+}
+
+function resetState() {
+  state.games = [];
+  state.skippedUrls = new Set();
+  state.search = "";
+  state.source = "all";
+  state.category = "all";
+  state.status = "all";
+  state.linkType = "all";
+
+  els.bundleFile.value = "";
+  els.searchInput.value = "";
+  els.statusFilter.value = "all";
+  els.linkTypeFilter.value = "all";
+
+  updateFilterOptions();
+  renderAll();
+}
+
+async function handleBundleUpload(file) {
+  if (!file) {
+    state.games = [];
+    state.skippedUrls = new Set();
+    updateFilterOptions();
+    renderAll();
+    return;
+  }
+
+  const fileName = String(file.name || "");
+  const lower = fileName.toLowerCase();
+
+  try {
+    if (lower.endsWith(".zip")) {
+      await parseZipBundle(file);
+    } else {
+      const payload = await readJsonFile(file);
+      if (isSkippedFileName(fileName)) {
+        state.games = [];
+        state.skippedUrls = collectSkippedUrlsFromPayload(payload);
+      } else {
+        mergeGamesFromPayloads([{ fileName, payload }]);
+        state.skippedUrls = new Set();
+      }
+    }
+
+    state.source = "all";
+    state.category = "all";
+    state.status = "all";
+    state.linkType = "all";
+    updateFilterOptions();
+    renderAll();
+  } catch (error) {
+    alert(`Failed to parse ${fileName}: ${error.message}`);
+  }
+}
+
+els.bundleFile.addEventListener("change", (event) => {
+  handleBundleUpload(event.target.files[0]);
+});
+
+els.searchInput.addEventListener("input", (event) => {
+  state.search = event.target.value || "";
+  renderTable();
+});
+
+els.sourceFilter.addEventListener("change", (event) => {
+  state.source = event.target.value;
+  updateFilterOptions();
+  renderTable();
+});
+
+els.categoryFilter.addEventListener("change", (event) => {
+  state.category = event.target.value;
+  renderTable();
+});
+
+els.statusFilter.addEventListener("change", (event) => {
+  state.status = event.target.value;
+  renderTable();
+});
+
+els.linkTypeFilter.addEventListener("change", (event) => {
+  state.linkType = event.target.value;
+  renderTable();
+});
+
+els.resultsBody.addEventListener("click", (event) => {
+  const trigger = event.target.closest(".view-links-btn");
+  if (!trigger) return;
+  const gameUrl = String(trigger.dataset.gameUrl || "").trim();
+  if (!gameUrl) return;
+  openLinksModal(gameUrl);
+});
+
+els.linksModalClose.addEventListener("click", closeLinksModal);
+els.linksModal.addEventListener("click", (event) => {
+  if (event.target === els.linksModal) {
+    closeLinksModal();
+  }
+});
+
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && els.linksModal.classList.contains("open")) {
+    closeLinksModal();
+  }
+});
+
+els.clearBtn.addEventListener("click", resetState);
+els.exportCsvBtn.addEventListener("click", exportFilteredCsv);
+if (els.copyBtcBtn && els.btcAddress) {
+  els.copyBtcBtn.addEventListener("click", () => copyAddress("BTC", els.btcAddress, els.copyBtcBtn));
+}
+if (els.copyLnBtn && els.lnAddress) {
+  els.copyLnBtn.addEventListener("click", () => copyAddress("Lightning", els.lnAddress, els.copyLnBtn));
+}
+// follow button (opens x.com)
+const followBtn = document.getElementById("followBtn");
+if (followBtn) {
+  followBtn.addEventListener('click', () => window.open('https://x.com/', '_blank', 'noopener'));
+}
+
+resetState();
+  </script>
+</body>
+</html>
