@@ -34,4 +34,3 @@ Open `dlpsNetworkViewer.html` in your browser to quickly inspect, search, filter
 
 - Users must source/locate their own cache files. I will not provide them within this repo
 - Large caches may take a few moments to parse
-- I did not originally plan on sharing this, but after seeing all of the toxic behaviour towards Nookie's scraper that changed. We all want the same thing at the end of the day. To enjoy homebrew, and make cool shit. Certain foks in the scene need to stop trying to dictate what others can and can't do. If you don't like an individual just block and move on. We aren't children
